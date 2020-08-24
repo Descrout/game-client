@@ -4,12 +4,34 @@ class Network{
             alert("WebSocket NOT supported by your Browser!");
             return;
         }
+        this.port = port;
+    }
 
-        this.ws = new WebSocket(`ws://${window.location.hostname}:${port}`);
+    connect(){
+        if(this.ws) return;
 
-        this.ws.onopen = this.connected;
+        this.ws = new WebSocket(`ws://${window.location.hostname}:${this.port}`);
+        this.ws.binaryType = 'arraybuffer';
         this.ws.onmessage = this.messageReceived;
-        this.ws.onclose = this.disconnected;
+
+        let promise = new Promise((resolve, reject) => {
+            this.ws.onopen = () => {
+                this.connected();
+                resolve("Connected!");
+            };
+            
+            this.ws.onclose = () => {
+                this.disconnected();
+                this.ws = null;
+                reject("Offline!");
+            };
+        });
+        
+        return promise;
+    }
+
+    send(out, obj) {
+        this.ws.send(Parser.serialize(out, obj));
     }
 
     connected(){
@@ -17,7 +39,11 @@ class Network{
     }
 
     messageReceived(e){
-        console.log(`Message Received : ${e.data}`);
+        let data = new Uint8Array(e.data);
+        let obj = Parser.deSerialize(data);
+        if(!obj) return;
+
+        console.log(`Message Received : ${obj}`);
     }
 
     disconnected(){
