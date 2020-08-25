@@ -36,17 +36,17 @@ Room.write = function (obj, pbf) {
     if (obj.players) pbf.writeVarintField(4, obj.players);
 };
 
-// SetName ========================================
+// Handshake ========================================
 
-var SetName = self.SetName = {};
+var Handshake = self.Handshake = {};
 
-SetName.read = function (pbf, end) {
-    return pbf.readFields(SetName._readField, {name: ""}, end);
+Handshake.read = function (pbf, end) {
+    return pbf.readFields(Handshake._readField, {name: ""}, end);
 };
-SetName._readField = function (tag, obj, pbf) {
+Handshake._readField = function (tag, obj, pbf) {
     if (tag === 1) obj.name = pbf.readString();
 };
-SetName.write = function (obj, pbf) {
+Handshake.write = function (obj, pbf) {
     if (obj.name) pbf.writeStringField(1, obj.name);
 };
 
@@ -55,15 +55,17 @@ SetName.write = function (obj, pbf) {
 var Lobby = self.Lobby = {};
 
 Lobby.read = function (pbf, end) {
-    return pbf.readFields(Lobby._readField, {rooms: [], users: []}, end);
+    return pbf.readFields(Lobby._readField, {rooms: [], users: [], me: 0}, end);
 };
 Lobby._readField = function (tag, obj, pbf) {
     if (tag === 1) obj.rooms.push(Room.read(pbf, pbf.readVarint() + pbf.pos));
     else if (tag === 2) obj.users.push(User.read(pbf, pbf.readVarint() + pbf.pos));
+    else if (tag === 3) obj.me = pbf.readVarint();
 };
 Lobby.write = function (obj, pbf) {
     if (obj.rooms) for (var i = 0; i < obj.rooms.length; i++) pbf.writeMessage(1, Room.write, obj.rooms[i]);
     if (obj.users) for (i = 0; i < obj.users.length; i++) pbf.writeMessage(2, User.write, obj.users[i]);
+    if (obj.me) pbf.writeVarintField(3, obj.me);
 };
 
 // CreateRoom ========================================
@@ -96,4 +98,20 @@ JoinRoom._readField = function (tag, obj, pbf) {
 JoinRoom.write = function (obj, pbf) {
     if (obj.id) pbf.writeVarintField(1, obj.id);
     if (obj.password) pbf.writeStringField(2, obj.password);
+};
+
+// Chat ========================================
+
+var Chat = self.Chat = {};
+
+Chat.read = function (pbf, end) {
+    return pbf.readFields(Chat._readField, {name: "", message: ""}, end);
+};
+Chat._readField = function (tag, obj, pbf) {
+    if (tag === 1) obj.name = pbf.readString();
+    else if (tag === 2) obj.message = pbf.readString();
+};
+Chat.write = function (obj, pbf) {
+    if (obj.name) pbf.writeStringField(1, obj.name);
+    if (obj.message) pbf.writeStringField(2, obj.message);
 };

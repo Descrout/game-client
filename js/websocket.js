@@ -7,12 +7,16 @@ class Network{
         this.port = port;
     }
 
-    connect(){
+    connect(cb){
         if(this.ws) return;
 
         this.ws = new WebSocket(`ws://${window.location.hostname}:${this.port}`);
         this.ws.binaryType = 'arraybuffer';
-        this.ws.onmessage = this.messageReceived;
+        this.ws.onmessage = (e) => {
+            let data = new Uint8Array(e.data);
+            let obj = Parser.deSerialize(data);
+            if(obj) cb(data[0], obj);
+        }
 
         let promise = new Promise((resolve, reject) => {
             this.ws.onopen = () => {
@@ -31,19 +35,12 @@ class Network{
     }
 
     send(out, obj) {
+        console.log(Parser.serialize(out, obj));
         this.ws.send(Parser.serialize(out, obj));
     }
 
     connected(){
         console.log("Connection successful :)");
-    }
-
-    messageReceived(e){
-        let data = new Uint8Array(e.data);
-        let obj = Parser.deSerialize(data);
-        if(!obj) return;
-
-        console.log(`Message Received : ${obj}`);
     }
 
     disconnected(){

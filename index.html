@@ -18,6 +18,7 @@
 
     <script src="https://unpkg.com/pbf@3.0.5/dist/pbf.js"></script>
     <script src="js/proto-all.js"></script>
+    <script src="js/dom_control.js"></script>
     <script src="js/parser.js"></script>
     <script src="js/websocket.js"></script>
     <script src="js/main.js"></script>
@@ -26,11 +27,11 @@
 </head>
 
 <body>
-    <div class="wrapper">
-        <div id="center">
+    <div class="container wrapper" id="login">
+        <div id="loginFormHolder">
             <h3 style="margin-top: 48px;">Night Comes</h3>
 
-            <form action="javascript:void(0);" id="setnameForm" method="POST" onsubmit="initAll($('#name').val())">
+            <form action="javascript:void(0);" id="loginForm" method="POST" onsubmit="initAll($('#name').val())">
                 <div class="form-group">
                     <input type="text" id="name" name="name" class="form-control form-control-sm" placeholder="Username"
                         style="width:300px;margin:auto;" required />
@@ -42,6 +43,33 @@
                 Mutfak 2020
             </div>
         </div>
+    </div>
+
+    <div class="container" id="lobby">
+        <div class="row" style="height: 75%;">
+            <div class="col-sm-2 moduleWrapper">
+                <div class="moduleTitle">Players</div>
+                <div  id="players" class="scrollStyle">
+                    <table class="table table-striped" id="playersTable"><tbody></tbody></table>
+                </div>
+            </div>
+            <div class="col-sm-10 moduleWrapper">
+                <div class="moduleTitle">Games</div>
+            </div>
+        </div>
+        <div class="row" style="height: 25%;">
+            <div class="col-sm-2 moduleWrapper">
+                <div class="moduleTitle">Profile</div>
+            </div>
+            <div class="col-sm-10 moduleWrapper">
+                <div class="moduleTitle">Chat</div>
+                <div id="chatBox" class="chat scrollStyle"></div>
+                <div style="height: 70%;"></div>
+                <input type="text" id="chatInputBox" class="chatText" placeholder="Type a message !">
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>
