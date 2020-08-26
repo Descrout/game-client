@@ -2,12 +2,14 @@ const SendHeader = {
     HANDSHAKE: 0,
     CREATE_ROOM: 1,
     JOIN_ROOM: 2,
-    CHAT: 3,
+    CHAT: 4,
 };
 
 const ReceiveHeader = {
-    LOBBY: 0,
-    CHAT: 1,
+    USERS: 0,
+    ROOMS: 1,
+    CHAT: 2,
+    ERROR: 3,
 };
 
 class Parser{
@@ -45,8 +47,10 @@ class Parser{
     static deSerialize(data){
         let pbf = new Pbf(data.slice(1));
         switch(data[0]){
-            case ReceiveHeader.LOBBY: return Lobby.read(pbf);
+            case ReceiveHeader.USERS: return Users.read(pbf);
+            case ReceiveHeader.ROOMS: return Rooms.read(pbf);
             case ReceiveHeader.CHAT: return Chat.read(pbf);
+            case ReceiveHeader.ERROR: return Error.read(pbf);
             default:
                 console.error("Receive header doesn't match");
                 return;

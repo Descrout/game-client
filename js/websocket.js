@@ -44,6 +44,11 @@ class Network{
     }
 
     disconnected(){
-        console.log("Connection closed :(");
+        if(domControl.state == DomState.LOBBY || domControl.state == DomState.GAME)
+            location.reload();
+    }
+
+    close(){
+        this.ws.close();
     }
 }

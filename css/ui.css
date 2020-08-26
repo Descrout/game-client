@@ -38,6 +38,11 @@ body{
     background: rgba(0,0,0,.9);
 }
 
+.btn-profile{
+    margin-top: 20px;
+    width: 85%;
+}
+
 .chat{
     width: 100%;
     height: 70%;
