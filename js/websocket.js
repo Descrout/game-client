@@ -35,7 +35,6 @@ class Network{
     }
 
     send(out, obj) {
-        console.log(Parser.serialize(out, obj));
         this.ws.send(Parser.serialize(out, obj));
     }
 

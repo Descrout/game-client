@@ -2,15 +2,21 @@ const SendHeader = {
     HANDSHAKE: 0,
     CREATE_ROOM: 1,
     JOIN_ROOM: 2,
-    CHAT: 4,
+    LOBBY_CHAT: 3,
+    QUIT_TO_LOBBY: 4,
+    GAME_CHAT: 5,
+    GAME_INPUT: 6,
 };
 
 const ReceiveHeader = {
     USERS: 0,
     ROOMS: 1,
-    CHAT: 2,
+    LOBBY_CHAT: 2,
     ERROR: 3,
+    GAME_CHAT: 4,
+    STATE: 5,
 };
+
 
 class Parser{
     static headersToRust(){
@@ -33,8 +39,20 @@ class Parser{
             case SendHeader.HANDSHAKE:
                 Handshake.write(obj, pbf);
                 break;
-            case SendHeader.CHAT:
+            case SendHeader.LOBBY_CHAT:
                 Chat.write(obj, pbf);
+                break;
+            case SendHeader.CREATE_ROOM:
+                CreateRoom.write(obj, pbf);
+                break;
+            case SendHeader.JOIN_ROOM:
+                JoinRoom.write(obj, pbf);
+                break;
+            case SendHeader.QUIT_TO_LOBBY:
+                QuitLobby.write(obj, pbf);
+                break;
+            case SendHeader.GAME_INPUT:
+                GameInput.write(obj, pbf);
                 break;
             default:
                 console.error("Send header doesn't match !");
@@ -49,8 +67,9 @@ class Parser{
         switch(data[0]){
             case ReceiveHeader.USERS: return Users.read(pbf);
             case ReceiveHeader.ROOMS: return Rooms.read(pbf);
-            case ReceiveHeader.CHAT: return Chat.read(pbf);
-            case ReceiveHeader.ERROR: return Error.read(pbf);
+            case ReceiveHeader.LOBBY_CHAT: return Chat.read(pbf);
+            case ReceiveHeader.ERROR: return ErrorServer.read(pbf);
+            case ReceiveHeader.STATE: return State.read(pbf);
             default:
                 console.error("Receive header doesn't match");
                 return;
