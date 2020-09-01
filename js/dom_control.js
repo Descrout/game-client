@@ -102,6 +102,7 @@ class DomControl{
         players.reverse().forEach((player)=>{
             let name = "";
             if(id == player.id){
+                this.me = id;
                 name = `<b>${player.name}</b>`;
                 this.myName.innerHTML = name;
             }else{
@@ -123,7 +124,7 @@ class DomControl{
     hideLoading(){
         setTimeout(()=>{
             $('#loadMe').modal("hide");
-        }, 500);
+        }, 600);
     }
 
     createRoom(){

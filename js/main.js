@@ -1,4 +1,4 @@
-let socket = new Network("6444");
+let socket = new Network("8081");
 let domControl = new DomControl();
 let game = new Game();
 
