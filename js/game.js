@@ -11,7 +11,7 @@ class Game{
         this.players = new Map();
         this.loaded = false;
         this.myEntity = {x: 0, y: 0};
-        this.pending_inputs = new Array();
+        this.pending_inputs = [];
         this.sequence = 0;
         this.dt = 0.016;
         this.accumulator = 0.0;
@@ -51,11 +51,13 @@ class Game{
         let entity = game.players.get(pos.id);
         if(entity) return entity;
         entity = game.players.set(pos.id, new PIXI.Sprite(game.textures.hitman)).get(pos.id);
+        entity.anchor.set(0.3, 0.5);
+        if(pos.id == domControl.me) game.myEntity = entity;
+        else entity.pos_buffer = [];
+        
         entity.x = pos.x;
         entity.y = pos.y;
         entity.rotation = pos.angle;
-        entity.anchor.set(0.3, 0.5);
-        if(pos.id == domControl.me) game.myEntity = entity;
         game.app.stage.addChild(entity);
         return entity;
     }
@@ -79,9 +81,8 @@ class Game{
                     }
                 }
             }else{
-                entity.target_x = pos.x;
-                entity.target_y = pos.y;
-                entity.target_rotation = pos.angle;
+                let timestamp = +new Date();
+                entity.pos_buffer.push([timestamp, pos]);
             }
         }
 
@@ -105,12 +106,34 @@ class Game{
     }
 
     update() {
+        let now = +new Date();
+        let render_timestamp = now - game.app.ticker.elapsedMS;
+
         for (const [key, player] of game.players.entries()) {
-            if(key != domControl.me){
-                player.x += (player.target_x - player.x) * 0.06;
-                player.y += (player.target_y - player.y) * 0.06;
-                //player.rotation += (player.target_rotation - player.rotation) * 0.05;
-                player.rotation = player.target_rotation;
+            if(key == domControl.me) continue;
+            let buffer = player.pos_buffer;
+            while (buffer.length >= 2 && buffer[1][0] <= render_timestamp) {
+                buffer.shift();
+            }
+            
+            if (buffer.length >= 2 && buffer[0][0] <= render_timestamp && render_timestamp <= buffer[1][0]) {
+                var pos0 = buffer[0][1];
+                var pos1 = buffer[1][1];
+                var t0 = buffer[0][0];
+                var t1 = buffer[1][0];
+          
+                let alpha = (render_timestamp - t0) / (t1 - t0);
+
+                player.x = pos0.x + (pos1.x - pos0.x) * alpha;
+                player.y = pos0.y + (pos1.y - pos0.y) * alpha;
+
+                let ang = pos0.angle + (pos1.angle - pos0.angle) * alpha;
+                if(Math.sign(ang) != Math.sign(player.rotation)){
+                    player.rotation = pos1.angle;
+                }else{
+                    player.rotation = ang;
+                    
+                }
             }
         }
     }
@@ -125,16 +148,16 @@ class Game{
         let left = game.keys[65];
         let right = game.keys[68];
 
-        //if(up == down && left == right && angle == this.myEntity.rotation) return;
+        if(up == down && left == right && angle == this.myEntity.rotation) return;
         
         let input = {
             up: up, down: down,
             left: left, right: right,
             angle: angle, sequence: game.sequence++,
         };
+        socket.send(SendHeader.GAME_INPUT, input);
         this.applyInput(input);
         this.pending_inputs.push(input);
-        socket.send(SendHeader.GAME_INPUT, input);
     }
 
     mouseMove(e) {
@@ -156,7 +179,7 @@ class Game{
         this.app.stop();
         this.app.stage.removeChildren();
         this.players.clear();
-        this.pending_inputs.clear();
+        this.pending_inputs = [];
         this.sequence = 0;
         this.accumulator = 0.0;
         socket.send(SendHeader.QUIT_TO_LOBBY, {});
