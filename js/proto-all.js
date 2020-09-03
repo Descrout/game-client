@@ -197,21 +197,17 @@ State.write = function (obj, pbf) {
 var GameInput = self.GameInput = {};
 
 GameInput.read = function (pbf, end) {
-    return pbf.readFields(GameInput._readField, {up: false, down: false, left: false, right: false, angle: 0, sequence: 0}, end);
+    return pbf.readFields(GameInput._readField, {horizontalPress: 0, verticalPress: 0, angle: 0, sequence: 0}, end);
 };
 GameInput._readField = function (tag, obj, pbf) {
-    if (tag === 1) obj.up = pbf.readBoolean();
-    else if (tag === 2) obj.down = pbf.readBoolean();
-    else if (tag === 3) obj.left = pbf.readBoolean();
-    else if (tag === 4) obj.right = pbf.readBoolean();
-    else if (tag === 5) obj.angle = pbf.readFloat();
-    else if (tag === 6) obj.sequence = pbf.readVarint();
+    if (tag === 1) obj.horizontalPress = pbf.readFloat();
+    else if (tag === 2) obj.verticalPress = pbf.readFloat();
+    else if (tag === 3) obj.angle = pbf.readFloat();
+    else if (tag === 4) obj.sequence = pbf.readVarint();
 };
 GameInput.write = function (obj, pbf) {
-    if (obj.up) pbf.writeBooleanField(1, obj.up);
-    if (obj.down) pbf.writeBooleanField(2, obj.down);
-    if (obj.left) pbf.writeBooleanField(3, obj.left);
-    if (obj.right) pbf.writeBooleanField(4, obj.right);
-    if (obj.angle) pbf.writeFloatField(5, obj.angle);
-    if (obj.sequence) pbf.writeVarintField(6, obj.sequence);
+    if (obj.horizontalPress) pbf.writeFloatField(1, obj.horizontalPress);
+    if (obj.verticalPress) pbf.writeFloatField(2, obj.verticalPress);
+    if (obj.angle) pbf.writeFloatField(3, obj.angle);
+    if (obj.sequence) pbf.writeVarintField(4, obj.sequence);
 };

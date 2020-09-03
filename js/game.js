@@ -1,3 +1,7 @@
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 class Game {
     constructor() {
         this.app = new PIXI.Application({
@@ -14,18 +18,17 @@ class Game {
         this.myEntity = { x: 0, y: 0 };
         this.pending_inputs = [];
         this.sequence = 0;
-        this.dt = 0.016;
-        this.dt_real = 0.016;
+        this.updateTimer  = 0;
+        this.tickRate = 60;
+        this.lastUpdateTs = -1;
         this.server_tick = 45;
-        this.accumulator = 0.0;
-        this.lerp = true;
 
-        this.sec = 0;
-        this.lag = 0;
-        this.ping = 0;
-        this.incPacket = 0;
-        this.infoText = new PIXI.Text("");
+        this.receiveTime = 0;
+        this.delta = 0;
+        this.accumulator = 0;
+        this.lagPackets = new Array();
     }
+
 
     init(state) {
         domControl.state = DomState.GAME;
@@ -44,40 +47,18 @@ class Game {
         }
     }
 
+
     setup() {
         this.app.start();
         window.addEventListener("keydown", this.keysDown);
         window.addEventListener("keyup", this.keysUp);
         this.app.stage.interactive = true;
         this.app.stage.on("pointermove", this.mouseMove);
-        this.app.stage.addChild(this.infoText);
-        this.app.ticker.add(() => {
-            
-            this.dt_real = this.app.ticker.elapsedMS / 1000;
-
-            this.accumulator += this.dt_real;
-            while(this.accumulator >= this.dt) {
-                this.send();
-                
-                this.accumulator -= this.dt;
-            }
-            this.update();
-            
-        });
-
-        setInterval(()=>{
-            this.infoText.text = "";
-            this.infoText.text += `Ping : ${Math.round(this.ping/this.sec)}\n`;
-            this.infoText.text += `Received packet per sec : ${this.incPacket}\n`;
-            this.infoText.text += `Pending inputs : ${this.pending_inputs.length}\n`;
-            this.infoText.text += `Input sequence difference : ${game.sequence - game.seqq}\n`;
-
-            this.sec += 1;
-            this.ping += this.lag;
-            this.incPacket = 0;
-
-        }, 1000);
-
+        setInterval(() => {
+            game.waitRecv();
+            game.interpolateEntities();
+            game.send();
+        }, 1000 / game.tickRate);
     }
 
     getOrAddEntity(pos) {
@@ -95,8 +76,22 @@ class Game {
         return entity;
     }
 
+    waitRecv(){
+        const nowTs = Date.now();
+        const lastUpdateTs = this.lastUpdateTs >= 0 ? this.lastUpdateTs : nowTs;
+        this.delta = (nowTs - lastUpdateTs) / 1000;
+        this.lastUpdateTs = nowTs;
+
+        this.accumulator += this.delta;
+        while(this.accumulator >= 0.045){
+            this.accumulator -= 0.045;
+            if(this.lagPackets.length > 0)
+                this.receive(this.lagPackets.shift());
+            
+        }
+    }
+
     receive(state) {
-        this.incPacket += 1;
         for (const pos of state.entities) {
             const entity = game.getOrAddEntity(pos);
             entity.shouldRemove = false;
@@ -104,30 +99,22 @@ class Game {
                 entity.x = pos.x;
                 entity.y = pos.y;
                 entity.rotation = pos.angle;
-                let i = 0;
-                while (i < game.pending_inputs.length) {
-                    let input = game.pending_inputs[i];
-                    if(input.sequence == state.last_seq) game.lag = Date.now() - input.time;
-                    if (input.sequence <= state.last_seq) {
-                        game.pending_inputs.splice(i, 1);
-                        game.seqq = state.last_seq;
-                    } else {
-                        game.applyInput(input);
-                        i++;
-                    }
-                }
-            } else {
-                if(game.lerp){
-                    let timestamp = Date.now();
-                    entity.pos_buffer.push([timestamp, pos]);
-                }else{
-                    entity.x = pos.x;
-                    entity.y = pos.y;
-                    entity.rotation = pos.angle;
-                }
+
+                game.pending_inputs = game.pending_inputs.filter(input => {
+                    return input.sequence > state.last_seq;
+                });
+
+                game.pending_inputs.forEach(input => {
+                    game.applyInput(input);
+                });
+            }else {
+                entity.pos_buffer.push([Date.now(), pos]);
             }
         }
-
+        this.server_tick = Date.now() - this.receiveTime;
+        this.receiveTime = Date.now();
+        console.log(this.server_tick);
+        //if(this.server_tick < 45) this.server_tick = 45;
         for (const [key, value] of game.players.entries()) {
             if (value.shouldRemove) {
                 game.app.stage.removeChild(value);
@@ -139,20 +126,20 @@ class Game {
     }
 
     applyInput(input) {
-        if (input.up) game.myEntity.y -= 300 * game.dt;
-        if (input.down) game.myEntity.y += 300 * game.dt;
-        if (input.left) game.myEntity.x -= 300 * game.dt;
-        if (input.right) game.myEntity.x += 300 * game.dt;
+        game.myEntity.y += 300 * input.verticalPress;
+        game.myEntity.x += 300 * input.horizontalPress;
         game.myEntity.rotation = input.angle;
     }
 
-    update() {
+    interpolateEntities() {
         let now = Date.now();
-        let render_timestamp = now - (this.ping/this.sec);
+        let render_timestamp = now - 45;
         
         for (const [key, player] of game.players.entries()) {
             if (key == domControl.me) continue;
+            
             let buffer = player.pos_buffer;
+       
             while (buffer.length >= 2 && buffer[1][0] <= render_timestamp) {
                 buffer.shift();
             }
@@ -182,22 +169,30 @@ class Game {
         let dy = game.mouse.y - game.myEntity.y;
         let angle = Math.atan2(dy, dx);
 
-        let up = game.keys[87];
-        let down = game.keys[83];
-        let left = game.keys[65];
-        let right = game.keys[68];
+        let horiTime = 0;
+        let verTime = 0;
 
-        //if (up == down && left == right && angle == this.myEntity.rotation) return;
+        if(game.keys[87]){
+            verTime = -this.delta;
+        }else if(game.keys[83]){
+            verTime = this.delta;
+        }
+
+        if(game.keys[65]){
+            horiTime = -this.delta;
+        }else if(game.keys[68]){
+            horiTime = this.delta;
+        }
+
+        if (horiTime == 0 && verTime == 0 && angle == this.myEntity.rotation) return;
 
         let input = {
-            up: up, down: down,
-            left: left, right: right,
+            horizontalPress: horiTime, verticalPress: verTime,
             angle: angle, sequence: game.sequence++,
         };
 
         socket.send(SendHeader.GAME_INPUT, input);
         this.applyInput(input);
-        input.time = Date.now();
         this.pending_inputs.push(input);
     }
 

@@ -36,7 +36,7 @@ function received(header, obj){
         break;
         case ReceiveHeader.STATE:
             if(domControl.state != DomState.GAME) game.init(obj);
-            else if(game.loaded) game.receive(obj);
+            else if(game.loaded) game.lagPackets.push(obj);
         break;
     }
 }

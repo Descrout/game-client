@@ -71,7 +71,7 @@ class Parser{
             case ReceiveHeader.USERS: return Users.read(pbf);
             case ReceiveHeader.ROOMS: return Rooms.read(pbf);
             case ReceiveHeader.LOBBY_CHAT: return Chat.read(pbf);
-            case ReceiveHeader.ERROR: return ErrorServer.read(pbf);
+            case ReceiveHeader.ERROR: return Error.read(pbf);
             case ReceiveHeader.GAME_CHAT: return Chat.read(pbf);
             case ReceiveHeader.STATE: return State.read(pbf);
             default:
