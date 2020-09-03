@@ -31,9 +31,12 @@ function received(header, obj){
         case ReceiveHeader.ERROR:
             domControl.showError(obj);
         break;
+        case ReceiveHeader.GAME_CHAT:
+            console.log(Date.now()-socket.msg_lag);    
+        break;
         case ReceiveHeader.STATE:
             if(domControl.state != DomState.GAME) game.init(obj);
-            else if(game.loaded) game.updateState(obj);
+            else if(game.loaded) game.receive(obj);
         break;
     }
 }

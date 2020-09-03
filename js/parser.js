@@ -51,6 +51,9 @@ class Parser{
             case SendHeader.QUIT_TO_LOBBY:
                 QuitLobby.write(obj, pbf);
                 break;
+            case SendHeader.GAME_CHAT:
+                Chat.write(obj, pbf);
+                break;
             case SendHeader.GAME_INPUT:
                 GameInput.write(obj, pbf);
                 break;
@@ -69,6 +72,7 @@ class Parser{
             case ReceiveHeader.ROOMS: return Rooms.read(pbf);
             case ReceiveHeader.LOBBY_CHAT: return Chat.read(pbf);
             case ReceiveHeader.ERROR: return ErrorServer.read(pbf);
+            case ReceiveHeader.GAME_CHAT: return Chat.read(pbf);
             case ReceiveHeader.STATE: return State.read(pbf);
             default:
                 console.error("Receive header doesn't match");

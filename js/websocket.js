@@ -9,8 +9,8 @@ class Network{
 
     connect(cb){
         if(this.ws) return;
-
-        this.ws = new WebSocket(`ws://${window.location.hostname}:${this.port}`);
+        //206.189.111.249
+        this.ws = new WebSocket(`ws://206.189.111.249:6444`);//ws://${window.location.hostname}:${this.port}
         this.ws.binaryType = 'arraybuffer';
         this.ws.onmessage = (e) => {
             let data = new Uint8Array(e.data);

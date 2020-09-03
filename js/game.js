@@ -1,35 +1,45 @@
-class Game{
-    constructor(){
+class Game {
+    constructor() {
         this.app = new PIXI.Application({
-            width: 800, height: 600, 
-            backgroundColor: 0x1099bb, 
-            resolution: window.devicePixelRatio || 1});
+            width: 800, height: 600,
+            backgroundColor: 0x1099bb,
+            resolution: window.devicePixelRatio || 1
+        });
         this.app.stop();
         this.textures = {};
         this.keys = {};
-        this.mouse = {x: 0, y: 0};
+        this.mouse = { x: 0, y: 0 };
         this.players = new Map();
         this.loaded = false;
-        this.myEntity = {x: 0, y: 0};
+        this.myEntity = { x: 0, y: 0 };
         this.pending_inputs = [];
         this.sequence = 0;
         this.dt = 0.016;
+        this.dt_real = 0.016;
+        this.server_tick = 45;
         this.accumulator = 0.0;
+        this.lerp = true;
+
+        this.sec = 0;
+        this.lag = 0;
+        this.ping = 0;
+        this.incPacket = 0;
+        this.infoText = new PIXI.Text("");
     }
 
     init(state) {
         domControl.state = DomState.GAME;
-        if(!game.loaded){
+        if (!game.loaded) {
             PIXI.Loader.shared
-            .add("hitman", "../assets/hitman1_gun.png")
-            .load((loader, resources)=>{
-                game.textures.hitman = resources.hitman.texture;
-                game.updateState(state);
-                domControl.intoGame();
-                game.loaded = true;
-            });
-        }else {
-            this.updateState(state);
+                .add("hitman", "../assets/hitman1_gun.png")
+                .load((loader, resources) => {
+                    game.textures.hitman = resources.hitman.texture;
+                    game.receive(state);
+                    domControl.intoGame();
+                    game.loaded = true;
+                });
+        } else {
+            this.receive(state);
             domControl.intoGame();
         }
     }
@@ -40,21 +50,44 @@ class Game{
         window.addEventListener("keyup", this.keysUp);
         this.app.stage.interactive = true;
         this.app.stage.on("pointermove", this.mouseMove);
-        this.app.ticker.add(()=>{
-            this.dt = this.app.ticker.elapsedMS / 1000;
+        this.app.stage.addChild(this.infoText);
+        this.app.ticker.add(() => {
+            
+            this.dt_real = this.app.ticker.elapsedMS / 1000;
+
+            this.accumulator += this.dt_real;
+            while(this.accumulator >= this.dt) {
+                this.send();
+                
+                this.accumulator -= this.dt;
+            }
             this.update();
-            this.send();
+            
         });
+
+        setInterval(()=>{
+            this.infoText.text = "";
+            this.infoText.text += `Ping : ${Math.round(this.ping/this.sec)}\n`;
+            this.infoText.text += `Received packet per sec : ${this.incPacket}\n`;
+            this.infoText.text += `Pending inputs : ${this.pending_inputs.length}\n`;
+            this.infoText.text += `Input sequence difference : ${game.sequence - game.seqq}\n`;
+
+            this.sec += 1;
+            this.ping += this.lag;
+            this.incPacket = 0;
+
+        }, 1000);
+
     }
 
-    getOrAddEntity(pos){
+    getOrAddEntity(pos) {
         let entity = game.players.get(pos.id);
-        if(entity) return entity;
+        if (entity) return entity;
         entity = game.players.set(pos.id, new PIXI.Sprite(game.textures.hitman)).get(pos.id);
         entity.anchor.set(0.3, 0.5);
-        if(pos.id == domControl.me) game.myEntity = entity;
+        if (pos.id == domControl.me) game.myEntity = entity;
         else entity.pos_buffer = [];
-        
+
         entity.x = pos.x;
         entity.y = pos.y;
         entity.rotation = pos.angle;
@@ -62,78 +95,84 @@ class Game{
         return entity;
     }
 
-    updateState(state){
-        for(const pos of state.entities) {
+    receive(state) {
+        this.incPacket += 1;
+        for (const pos of state.entities) {
             const entity = game.getOrAddEntity(pos);
             entity.shouldRemove = false;
-            if(pos.id == domControl.me){
+            if (pos.id == domControl.me) {
                 entity.x = pos.x;
                 entity.y = pos.y;
                 entity.rotation = pos.angle;
                 let i = 0;
                 while (i < game.pending_inputs.length) {
                     let input = game.pending_inputs[i];
-                    if(input.sequence <= state.last_seq) {
+                    if(input.sequence == state.last_seq) game.lag = Date.now() - input.time;
+                    if (input.sequence <= state.last_seq) {
                         game.pending_inputs.splice(i, 1);
-                    }else{
+                        game.seqq = state.last_seq;
+                    } else {
                         game.applyInput(input);
                         i++;
                     }
                 }
-            }else{
-                let timestamp = +new Date();
-                entity.pos_buffer.push([timestamp, pos]);
+            } else {
+                if(game.lerp){
+                    let timestamp = Date.now();
+                    entity.pos_buffer.push([timestamp, pos]);
+                }else{
+                    entity.x = pos.x;
+                    entity.y = pos.y;
+                    entity.rotation = pos.angle;
+                }
             }
         }
 
         for (const [key, value] of game.players.entries()) {
-            if(value.shouldRemove){
+            if (value.shouldRemove) {
                 game.app.stage.removeChild(value);
                 game.players.delete(key);
-            }else {
+            } else {
                 value.shouldRemove = true;
             }
         }
-  
     }
 
     applyInput(input) {
-        if(input.up) game.myEntity.y -= 300 * game.dt;
-        if(input.down) game.myEntity.y += 300 * game.dt;
-        if(input.left) game.myEntity.x -= 300 * game.dt;
-        if(input.right) game.myEntity.x += 300 * game.dt;
+        if (input.up) game.myEntity.y -= 300 * game.dt;
+        if (input.down) game.myEntity.y += 300 * game.dt;
+        if (input.left) game.myEntity.x -= 300 * game.dt;
+        if (input.right) game.myEntity.x += 300 * game.dt;
         game.myEntity.rotation = input.angle;
     }
 
     update() {
-        let now = +new Date();
-        let render_timestamp = now - game.app.ticker.elapsedMS;
-
+        let now = Date.now();
+        let render_timestamp = now - (this.ping/this.sec);
+        
         for (const [key, player] of game.players.entries()) {
-            if(key == domControl.me) continue;
+            if (key == domControl.me) continue;
             let buffer = player.pos_buffer;
             while (buffer.length >= 2 && buffer[1][0] <= render_timestamp) {
                 buffer.shift();
             }
-            
+
             if (buffer.length >= 2 && buffer[0][0] <= render_timestamp && render_timestamp <= buffer[1][0]) {
                 var pos0 = buffer[0][1];
                 var pos1 = buffer[1][1];
                 var t0 = buffer[0][0];
                 var t1 = buffer[1][0];
-          
+
                 let alpha = (render_timestamp - t0) / (t1 - t0);
 
                 player.x = pos0.x + (pos1.x - pos0.x) * alpha;
                 player.y = pos0.y + (pos1.y - pos0.y) * alpha;
 
-                let ang = pos0.angle + (pos1.angle - pos0.angle) * alpha;
-                if(Math.sign(ang) != Math.sign(player.rotation)){
-                    player.rotation = pos1.angle;
-                }else{
-                    player.rotation = ang;
-                    
-                }
+                let max = Math.PI * 2;
+                let da = (pos1.angle - pos0.angle) % max;
+                let short = 2 * da % max - da;
+                player.rotation = pos0.angle + short * alpha;
+                player.alpha = 0.5;
             }
         }
     }
@@ -148,15 +187,17 @@ class Game{
         let left = game.keys[65];
         let right = game.keys[68];
 
-        if(up == down && left == right && angle == this.myEntity.rotation) return;
-        
+        //if (up == down && left == right && angle == this.myEntity.rotation) return;
+
         let input = {
             up: up, down: down,
             left: left, right: right,
             angle: angle, sequence: game.sequence++,
         };
+
         socket.send(SendHeader.GAME_INPUT, input);
         this.applyInput(input);
+        input.time = Date.now();
         this.pending_inputs.push(input);
     }
 
@@ -170,6 +211,11 @@ class Game{
 
     keysUp(e) {
         game.keys[e.keyCode] = false;
+    }
+
+    chat(str){
+        socket.msg_lag = Date.now();
+        socket.send(SendHeader.GAME_CHAT, {name: "", message:str});
     }
 
     quit() {
