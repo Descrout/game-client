@@ -19,6 +19,8 @@ const ReceiveHeader = {
 
 
 class Parser{
+    //export headers to rust
+    //so we can be on the same page
     static headersToRust(){
         let txt = "pub mod SendHeader {\n";
         for (const [name, val] of Object.entries(ReceiveHeader)) {

@@ -128,11 +128,14 @@ class DomControl{
     }
 
     createRoom(){
-        this.showLoading();
         let room_to_create = $('#roomname2').val();
         let pass = $('#roompass2').val();
-        if(room_to_create.length < 4) return;
         $('#newRoomModal').modal("hide");
+        if(room_to_create.length < 4) {
+            this.showError({title: "Room name is too short.", message: "Provide a longer room name."});
+            return;
+        }
+        this.showLoading();
         socket.send(SendHeader.CREATE_ROOM, {name: room_to_create, password: pass});
         $('#roomname2').val("");
         $('#roompass2').val("");

@@ -1,16 +1,15 @@
 class Network{
-    constructor(port){
+    constructor(server){
         if (!("WebSocket" in window)){
             alert("WebSocket NOT supported by your Browser!");
             return;
         }
-        this.port = port;
+        this.server = server;
     }
 
     connect(cb){
         if(this.ws) return;
-        this.ws = new WebSocket(`ws://206.189.111.249:6444`);
-        //this.ws = new WebSocket(`ws://127.0.0.1:6444`);//ws://${window.location.hostname}:${this.port}
+        this.ws = new WebSocket(this.server);
         this.ws.binaryType = 'arraybuffer';
         this.ws.onmessage = (e) => {
             let data = new Uint8Array(e.data);

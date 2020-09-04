@@ -7,15 +7,14 @@
     <title>Adil Basar Websocket</title>
 
     <link rel="stylesheet" href="css/libs/jquery.dataTables.min.css">
-    
-    <script src="js/libs/jquery-3.5.1.slim.min.js"></script>
-
     <link rel="stylesheet" href="css/libs/bootstrap.min.css">
-    <script src="js/libs/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/ui.css">
+
+    <script src="js/libs/jquery-3.5.1.slim.min.js"></script>
     <script src="js/libs/jquery.dataTables.min.js"></script>
+    <script src="js/libs/bootstrap.min.js"></script>
     <script src="js/libs/pbf.js"></script>
     <script src="js/libs/pixi.min.js"></script>
-    
     <script src="js/proto-all.js"></script>
     <script src="js/dom_control.js"></script>
     <script src="js/parser.js"></script>
@@ -23,13 +22,12 @@
     <script src="js/game.js"></script>
     <script src="js/main.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="css/ui.css">
 </head>
 
 <body>
     <div class="container wrapper" id="login">
         <div id="loginFormHolder">
-            <h3 style="margin-top: 48px;">Mutfak</h3>
+            <h3 style="margin-top: 48px;">Websocket Game</h3>
 
             <form action="javascript:void(0);" id="loginForm" method="POST" onsubmit="initAll($('#name').val())">
                 <div class="form-group">

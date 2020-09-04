@@ -1,4 +1,4 @@
-let socket = new Network("8081");
+let socket = new Network(`ws://127.0.0.1:6444`);
 let domControl = new DomControl();
 let game = new Game();
 
@@ -32,11 +32,11 @@ function received(header, obj){
             domControl.showError(obj);
         break;
         case ReceiveHeader.GAME_CHAT:
-            console.log(Date.now()-socket.msg_lag);    
+            //domControl.showGameChat(obj); // you can implement gamechat here  
         break;
         case ReceiveHeader.STATE:
             if(domControl.state != DomState.GAME) game.init(obj);
-            else if(game.loaded) game.lagPackets.push(obj);
+            else if(game.loaded) game.incomingPackets.push(obj);
         break;
     }
 }
