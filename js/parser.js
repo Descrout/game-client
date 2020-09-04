@@ -18,10 +18,10 @@ const ReceiveHeader = {
 };
 
 
-class Parser{
+class Parser {
     //export headers to rust
     //so we can be on the same page
-    static headersToRust(){
+    static headersToRust() {
         let txt = "pub mod SendHeader {\n";
         for (const [name, val] of Object.entries(ReceiveHeader)) {
             txt += `    pub const ${name}: u8 = ${val};\n`;
@@ -34,10 +34,10 @@ class Parser{
         return txt;
     }
 
-    static serialize(header, obj){
+    static serialize(header, obj) {
         let pbf = new Pbf();
         pbf.writeBytes([header]);
-        switch(header){
+        switch (header) {
             case SendHeader.HANDSHAKE:
                 Handshake.write(obj, pbf);
                 break;
@@ -67,9 +67,9 @@ class Parser{
         return pbf.finish().slice(1);
     }
 
-    static deSerialize(data){
+    static deSerialize(data) {
         let pbf = new Pbf(data.slice(1));
-        switch(data[0]){
+        switch (data[0]) {
             case ReceiveHeader.USERS: return Users.read(pbf);
             case ReceiveHeader.ROOMS: return Rooms.read(pbf);
             case ReceiveHeader.LOBBY_CHAT: return Chat.read(pbf);

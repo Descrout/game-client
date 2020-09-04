@@ -14,7 +14,7 @@ class Game {
         this.myEntity = { x: 0, y: 0 };
         this.pending_inputs = [];
         this.sequence = 0;
-        this.updateTimer  = 0;
+        this.updateTimer = 0;
         this.delta = 0;
         this.tickRate = 60;
         this.lastUpdateTs = -1;
@@ -73,16 +73,16 @@ class Game {
     //packets might receive at jumpy rate
     //so we don't call .receive function at incoming rate
     //instead we push incoming packets to buffer and simulate server send rate here
-    waitRecv(){
+    waitRecv() {
         const nowTs = Date.now();
         const lastUpdateTs = this.lastUpdateTs >= 0 ? this.lastUpdateTs : nowTs;
         this.delta = (nowTs - lastUpdateTs) / 1000;
         this.lastUpdateTs = nowTs;
 
         this.accumulator += this.delta;
-        while(this.accumulator >= this.server_delta){
+        while (this.accumulator >= this.server_delta) {
             this.accumulator -= this.server_delta;
-            if(this.incomingPackets.length > 0)
+            if (this.incomingPackets.length > 0)
                 this.receive(this.incomingPackets.shift());
         }
     }
@@ -103,7 +103,7 @@ class Game {
                 game.pending_inputs.forEach(input => {
                     game.applyInput(input);
                 });
-            }else {
+            } else {
                 entity.pos_buffer.push([Date.now(), pos]);
             }
         }
@@ -128,13 +128,13 @@ class Game {
     interpolateEntities() {
         let now = Date.now();
         let render_timestamp = now - game.server_tick;
-        
+
         for (const [key, player] of game.players.entries()) {
             if (key == domControl.me) continue; // if the entity is us continue looping through others
-            
+
             let buffer = player.pos_buffer;
-       
-            
+
+
             while (buffer.length >= 2 && buffer[1][0] <= render_timestamp) {
                 buffer.shift();
             }
@@ -169,15 +169,15 @@ class Game {
         let horiTime = 0;
         let verTime = 0;
 
-        if(game.keys[87]){
+        if (game.keys[87]) {
             verTime = -this.delta;
-        }else if(game.keys[83]){
+        } else if (game.keys[83]) {
             verTime = this.delta;
         }
 
-        if(game.keys[65]){
+        if (game.keys[65]) {
             horiTime = -this.delta;
-        }else if(game.keys[68]){
+        } else if (game.keys[68]) {
             horiTime = this.delta;
         }
 
@@ -205,8 +205,8 @@ class Game {
         game.keys[e.keyCode] = false;
     }
 
-    chat(str){
-        socket.send(SendHeader.GAME_CHAT, {name: "", message:str});
+    chat(str) {
+        socket.send(SendHeader.GAME_CHAT, { name: "", message: str });
     }
 
     quit() {

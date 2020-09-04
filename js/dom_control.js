@@ -1,15 +1,15 @@
 const DomState = {
-    LOGIN : 0,
-    LOBBY : 1,
-    GAME  : 2,
+    LOGIN: 0,
+    LOBBY: 1,
+    GAME: 2,
 };
 
-class DomControl{
-    constructor(){
+class DomControl {
+    constructor() {
         this.state = DomState.LOGIN;
     }
 
-    init(){
+    init() {
         this.login = document.getElementById("login");
         this.lobby = document.getElementById("lobby");
         this.game = document.getElementById("game");
@@ -18,26 +18,26 @@ class DomControl{
         this.myName = document.getElementById("myName");
 
 
-        $('#chatInputBox').keypress((event) =>{
+        $('#chatInputBox').keypress((event) => {
             if (event.keyCode == 13 || event.which == 13) {
                 let msg = $('#chatInputBox').val();
-                if(msg != ""){
-                    if(msg.length < 103)
-                        socket.send(SendHeader.LOBBY_CHAT, {name: "", message:msg});
-                    else this.pushMessage({name:"Error", message:"Your message was too long."})
+                if (msg != "") {
+                    if (msg.length < 103)
+                        socket.send(SendHeader.LOBBY_CHAT, { name: "", message: msg });
+                    else this.pushMessage({ name: "Error", message: "Your message was too long." })
                     $('#chatInputBox').val("");
                 }
             }
         });
 
-        $('#disconnectButton').click(()=>{
+        $('#disconnectButton').click(() => {
             socket.close();
         });
 
     }
 
-    pushMessage(msg){
-        this.chatBox.innerHTML += `<b>${msg.name}</b> : ${msg.message.replace("<","&lt;")} <br>`;
+    pushMessage(msg) {
+        this.chatBox.innerHTML += `<b>${msg.name}</b> : ${msg.message.replace("<", "&lt;")} <br>`;
         this.chatBox.scrollTop = chatBox.scrollHeight;
     }
 
@@ -49,7 +49,7 @@ class DomControl{
         game.setup();
     }
 
-    intoLobby(){
+    intoLobby() {
         this.state = DomState.LOBBY;
         this.login.style.display = "none";
         this.game.style.display = "none";
@@ -57,55 +57,55 @@ class DomControl{
 
         this.hideLoading();
 
-        if(!this.roomTable)
-        this.roomTable = $('#roomTable').DataTable({
-            "oLanguage": {
-              "sEmptyTable": "There is noone playing :(",
-              "sZeroRecords": "There is no room :(",
-              "sInfo":"Showing _TOTAL_ rooms(_START_ to _END_)",
-              "sInfoEmpty": "No rooms to show",
-              "sSearch": "Search Room:",
-              "sLengthMenu": "Show _MENU_ rooms"
-            },
-            scrollY: 290
-          });
+        if (!this.roomTable)
+            this.roomTable = $('#roomTable').DataTable({
+                "oLanguage": {
+                    "sEmptyTable": "There is noone playing :(",
+                    "sZeroRecords": "There is no room :(",
+                    "sInfo": "Showing _TOTAL_ rooms(_START_ to _END_)",
+                    "sInfoEmpty": "No rooms to show",
+                    "sSearch": "Search Room:",
+                    "sLengthMenu": "Show _MENU_ rooms"
+                },
+                scrollY: 290
+            });
 
         $('.dataTables_length').addClass('bs-select');
 
-        $('#roomTable tbody').on('click', 'tr',  function() {
+        $('#roomTable tbody').on('click', 'tr', function () {
             var data = domControl.roomTable.row(this).data();
-            if(!data) return;
+            if (!data) return;
             const id = data[0];
-            if(data[2]=="YES"){
+            if (data[2] == "YES") {
                 $('#roomIdHidden').val(id);
                 $('#roomPassModal').modal();
-            }else{
+            } else {
                 domControl.showLoading();
-                socket.send(SendHeader.JOIN_ROOM, {id: id});
+                socket.send(SendHeader.JOIN_ROOM, { id: id });
             }
-        } );
+        });
     }
 
-    updateRooms(rooms){
+    updateRooms(rooms) {
         this.roomTable.clear();
-        
-        for(const room of rooms){
+
+        for (const room of rooms) {
             let room_password = (room.password) ? "YES" : "NO";
-            this.roomTable.row.add([room.id,room.name,room_password,room.players+"/6"]);   
+            this.roomTable.row.add([room.id, room.name, room_password, room.players + "/6"]);
         }
-        
+
         this.roomTable.draw();
     }
 
-    updatePlayers(id, players){
+    updatePlayers(id, players) {
         $(this.players).find('tbody').empty();
-        players.reverse().forEach((player)=>{
+        players.reverse().forEach((player) => {
             let name = "";
-            if(id == player.id){
+            if (id == player.id) {
                 this.me = id;
                 name = `<b>${player.name}</b>`;
                 this.myName.innerHTML = name;
-            }else{
+            } else {
                 name = player.name;
             }
             $(this.players).find('tbody').append(`<tr><td>${player.id}</td>
@@ -113,7 +113,7 @@ class DomControl{
         });
     }
 
-    showLoading(){
+    showLoading() {
         $('#loadMe').modal({
             backdrop: "static",
             keyboard: false,
@@ -121,22 +121,22 @@ class DomControl{
         });
     }
 
-    hideLoading(){
-        setTimeout(()=>{
+    hideLoading() {
+        setTimeout(() => {
             $('#loadMe').modal("hide");
         }, 600);
     }
 
-    createRoom(){
+    createRoom() {
         let room_to_create = $('#roomname2').val();
         let pass = $('#roompass2').val();
         $('#newRoomModal').modal("hide");
-        if(room_to_create.length < 4) {
-            this.showError({title: "Room name is too short.", message: "Provide a longer room name."});
+        if (room_to_create.length < 4) {
+            this.showError({ title: "Room name is too short.", message: "Provide a longer room name." });
             return;
         }
         this.showLoading();
-        socket.send(SendHeader.CREATE_ROOM, {name: room_to_create, password: pass});
+        socket.send(SendHeader.CREATE_ROOM, { name: room_to_create, password: pass });
         $('#roomname2').val("");
         $('#roompass2').val("");
     }
@@ -148,16 +148,16 @@ class DomControl{
         $('#errorModal').modal();
     }
 
-    tryPassword(){
+    tryPassword() {
         let pass = $("#roompassJoin").val();
-        if(pass == "") return;
+        if (pass == "") return;
         let id = $('#roomIdHidden').val();
         $("#roompassJoin").val("");
         $('#roomPassModal').modal("hide");
 
         this.showLoading();
 
-        socket.send(SendHeader.JOIN_ROOM, {id:id, password: pass});
+        socket.send(SendHeader.JOIN_ROOM, { id: id, password: pass });
     }
 
 }
